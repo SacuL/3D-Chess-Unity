@@ -16,8 +16,8 @@ public abstract class Chessman : MonoBehaviour
         CurrentY = y;
     }
 
-    public virtual bool PossibleMoves()
+    public virtual bool[,] PossibleMoves()
     {
-        return true;
+        return new bool[8,8];
     }
 }
