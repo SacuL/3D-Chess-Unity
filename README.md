@@ -1,4 +1,4 @@
-# 3D Chess
+# One Day Project: 3D Chess
 3D Chess Game made in Unity.
 
 Unity version: 2017.1.0f3
