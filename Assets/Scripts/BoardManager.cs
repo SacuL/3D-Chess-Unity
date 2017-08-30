@@ -25,18 +25,23 @@ public class BoardManager : MonoBehaviour
 
     public bool isWhiteTurn = true;
 
+    private Material previousMat;
+    public Material selectedMat;
+
+    public int[] EnPassantMove { set; get; }
+
     // Use this for initialization
     void Start()
     {
         Instance = this;
         SpawnAllChessmans();
+        EnPassantMove = new int[2] { -1, -1 };
     }
 
     // Update is called once per frame
     void Update()
     {
         UpdateSelection();
-        DrawChessBoard();
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -65,11 +70,12 @@ public class BoardManager : MonoBehaviour
         bool hasAtLeastOneMove = false;
 
         allowedMoves = Chessmans[x, y].PossibleMoves();
-        for(int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                if (allowedMoves[i,j]) { 
+                if (allowedMoves[i, j])
+                {
                     hasAtLeastOneMove = true;
                     i = 8;
                     break;
@@ -81,6 +87,9 @@ public class BoardManager : MonoBehaviour
             return;
 
         selectedChessman = Chessmans[x, y];
+        previousMat = selectedChessman.GetComponent<MeshRenderer>().material;
+        selectedMat.mainTexture = previousMat.mainTexture;
+        selectedChessman.GetComponent<MeshRenderer>().material = selectedMat;
 
         BoardHighlights.Instance.HighLightAllowedMoves(allowedMoves);
     }
@@ -95,7 +104,7 @@ public class BoardManager : MonoBehaviour
             {
                 // Capture a piece
 
-                if(c.GetType() == typeof(King))
+                if (c.GetType() == typeof(King))
                 {
                     // End the game
                     EndGame();
@@ -105,6 +114,40 @@ public class BoardManager : MonoBehaviour
                 activeChessman.Remove(c.gameObject);
                 Destroy(c.gameObject);
             }
+            if (x == EnPassantMove[0] && y == EnPassantMove[1])
+            {
+                if (isWhiteTurn)
+                    c = Chessmans[x, y - 1];
+                else
+                    c = Chessmans[x, y + 1];
+
+                activeChessman.Remove(c.gameObject);
+                Destroy(c.gameObject);
+            }
+            EnPassantMove[0] = -1;
+            EnPassantMove[1] = -1;
+            if (selectedChessman.GetType() == typeof(Pawn))
+            {
+                if(y == 7) // White Promotion
+                {
+                    activeChessman.Remove(selectedChessman.gameObject);
+                    Destroy(selectedChessman.gameObject);
+                    SpawnChessman(1, x, y, true);
+                    selectedChessman = Chessmans[x, y];
+                }
+                else if (y == 0) // Black Promotion
+                {
+                    activeChessman.Remove(selectedChessman.gameObject);
+                    Destroy(selectedChessman.gameObject);
+                    SpawnChessman(7, x, y, false);
+                    selectedChessman = Chessmans[x, y];
+                }
+                EnPassantMove[0] = x;
+                if (selectedChessman.CurrentY == 1 && y == 3)
+                    EnPassantMove[1] = y - 1;
+                else if (selectedChessman.CurrentY == 6 && y == 4)
+                    EnPassantMove[1] = y + 1;
+            }
 
             Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
             selectedChessman.transform.position = GetTileCenter(x, y);
@@ -113,35 +156,10 @@ public class BoardManager : MonoBehaviour
             isWhiteTurn = !isWhiteTurn;
         }
 
+        selectedChessman.GetComponent<MeshRenderer>().material = previousMat;
+
         BoardHighlights.Instance.HideHighlights();
         selectedChessman = null;
-    }
-
-    private void DrawChessBoard()
-    {
-        Vector3 widthLine = Vector3.right * 8;
-        Vector3 heigthLine = Vector3.forward * 8;
-
-        for (int i = 0; i <= 8; i++)
-        {
-            Vector3 start = Vector3.forward * i;
-            Debug.DrawLine(start, start + widthLine);
-
-            start = Vector3.right * i;
-            Debug.DrawLine(start, start + heigthLine);
-        }
-
-        // Draw selection
-        if (selectionX >= 0 && selectionY >= 0)
-        {
-            Debug.DrawLine(
-                Vector3.forward * selectionY + Vector3.right * selectionX,
-                Vector3.forward * (selectionY + 1) + Vector3.right * (selectionX + 1));
-
-            Debug.DrawLine(
-                Vector3.forward * (selectionY + 1) + Vector3.right * selectionX,
-                Vector3.forward * selectionY + Vector3.right * (selectionX + 1));
-        }
     }
 
     private void UpdateSelection()
