@@ -59,6 +59,9 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
+
+        if (Input.GetKey("escape"))
+            Application.Quit();
     }
 
     private void SelectChessman(int x, int y)
